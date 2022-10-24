@@ -132,7 +132,6 @@ func main() {
 	server_port, err := strconv.Atoi(os.Args[2])
 
 	if err != nil {
-		log.Fatal(err)
 		panic(err)
 	}
 

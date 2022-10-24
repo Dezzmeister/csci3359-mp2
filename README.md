@@ -43,11 +43,11 @@ Once the client is connected, it spawns a new thread to handle incoming messages
 
 ### Client Flow
 
-![Client](client.jpeg)
+![Client](assets/client.jpeg)
 
 
 ### Server Flow 
 
-![Server](server.jpeg)
+![Server](assets/server.jpeg)
 
 WIP
