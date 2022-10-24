@@ -47,6 +47,5 @@ Once the client is connected, it spawns a new thread to handle incoming messages
 ![Server](assets/server.jpeg)
 =======
 <img src="assets/server.jpeg" alt="server" width="1200"/>
->>>>>>> refs/remotes/origin/gob
 
 WIP
