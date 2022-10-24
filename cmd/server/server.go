@@ -3,30 +3,32 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
+	"encoding/gob"
 	"fmt"
 	"internal/common"
+	"log"
 	"net"
 	"os"
 	"strconv"
 )
 
 type Message struct {
-	to string
-	from string
-	content string
+	To      string
+	From    string
+	Content string
+	Error   bool
 }
 
 type Connection struct {
 	username string
-	conn net.Conn
+	conn     net.Conn
 }
 
 /*
-	Accept a connection request and return a struct identifying the connecting user.
-	When a new user connects, they send their username prefixed by a header indicating the length
-	of the username. The username is rejected if the length is too high because we don't
-	want malicious clients causing the server to allocate extra memory.
+Accept a connection request and return a struct identifying the connecting user.
+When a new user connects, they send their username prefixed by a header indicating the length
+of the username. The username is rejected if the length is too high because we don't
+want malicious clients causing the server to allocate extra memory.
 */
 func receive_connection(ln net.Listener) (Connection, error) {
 	conn, err := ln.Accept()
@@ -48,7 +50,7 @@ func receive_connection(ln net.Listener) (Connection, error) {
 	// client does not allow you to send a long username
 	if username_size > uint8(common.MAX_USERNAME_LENGTH) {
 		conn.Close()
-		return Connection{}, errors.New(fmt.Sprintf("Username was too long: max %d characters", common.MAX_USERNAME_LENGTH))
+		return Connection{}, fmt.Errorf("username was too long: max %d characters", common.MAX_USERNAME_LENGTH)
 	}
 
 	raw_data := make([]byte, username_size)
@@ -67,7 +69,16 @@ func receive_connection(ln net.Listener) (Connection, error) {
 
 func receive_messages(connections map[string]Connection, conn Connection, mq chan<- Message) {
 	for {
-		var opcode uint16
+		dec := gob.NewDecoder(conn.conn)
+		var msg Message
+		err := dec.Decode(&msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		to_size := uint16(len(msg.To))
+		msg_size := uint16(len(msg.Content))
+
+		/*var opcode uint16
 
 		err := binary.Read(conn.conn, binary.BigEndian, &opcode)
 
@@ -80,10 +91,10 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 
 		if err != nil {
 			break
-		}
+		} */
 
-		to_size, msg_size := header[0], header[1]
-		total_size := to_size + msg_size
+		/*to_size, msg_size := header[0], header[1]
+		total_size := to_size + msg_size */
 
 		if to_size > uint16(common.MAX_USERNAME_LENGTH) {
 			fmt.Fprintf(
@@ -92,7 +103,7 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 				common.NameColor(conn.username),
 				to_size,
 				common.MAX_USERNAME_LENGTH)
-			break;
+			break
 		}
 
 		if msg_size > uint16(common.MAX_MESSAGE_LENGTH) {
@@ -102,20 +113,23 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 				common.NameColor(conn.username),
 				msg_size,
 				common.MAX_MESSAGE_LENGTH)
-			break;
+			break
 		}
 
-		raw_data := make([]byte, total_size)
+		/*raw_data := make([]byte, total_size)
 		_, err = conn.conn.Read(raw_data)
 		if err != nil {
 			break
 		}
 
 		to_username := string(raw_data[0:to_size])
-		message := string(raw_data[to_size:total_size])
+		message := string(raw_data[to_size:total_size]) */
 
-		mq <- Message{to_username, conn.username, message}
-		fmt.Fprintf(common.ColorOutput, "%s to %s: %s\n", common.NameColor(conn.username), common.NameColor(to_username), common.MessageColor(message))
+		msg.From = conn.username
+		mq <- msg
+		// mq <- Message{to_username, conn.username, message}
+		//fmt.Fprintf(common.ColorOutput, "%s to %s: %s\n", common.NameColor(conn.username), common.NameColor(to_username), common.MessageColor(message))
+		fmt.Fprintf(common.ColorOutput, "%s to %s: %s\n", common.NameColor(conn.username), common.NameColor(msg.To), common.MessageColor(msg.Content))
 	}
 
 	conn.conn.Close()
@@ -125,7 +139,14 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 }
 
 func send_error(conn net.Conn, error_msg string) {
-	header := []uint16{common.ERROR_CODE, uint16(len(error_msg))}
+	msg := Message{"", "", error_msg, true}
+	enc := gob.NewEncoder(conn)
+	err := enc.Encode(msg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/*header := []uint16{common.ERROR_CODE, uint16(len(error_msg))}
 	err := binary.Write(conn, binary.BigEndian, header)
 
 	if err != nil {
@@ -134,40 +155,42 @@ func send_error(conn net.Conn, error_msg string) {
 	}
 
 	_, err = fmt.Fprintf(conn, error_msg)
-	
+
 	if err != nil {
 		fmt.Println(err)
-	}
+	} */
 }
 
 func process_message_queue(connections map[string]Connection, mq <-chan Message) {
 	for {
-		msg, ok := <- mq
+		msg, ok := <-mq
 
 		if !ok {
 			return
 		}
 
-		to, ok := connections[msg.to]
+		to, ok := connections[msg.To]
 
 		if !ok {
-			fmt.Fprintf(common.ColorOutput, "User %s does not exist\n", common.NameColor(msg.to))
+			fmt.Fprintf(common.ColorOutput, "User %s does not exist\n", common.NameColor(msg.To))
 
-			from, ok := connections[msg.from]
+			from, ok := connections[msg.From]
 
 			// Obscure edge case in which a sender disconnects immediately after sending a message, but before the message
 			// is delivered. `connections` is shared among threads so another thread could delete a sender
-			// before this thread has a chance to process the message.
+			// before this thread has a chance to process the message.dec
 			if !ok {
-				fmt.Fprintf(common.ColorOutput, "Sender %s does not exist either. Dropping message\n", common.NameColor(msg.from))
+				fmt.Fprintf(common.ColorOutput, "Sender %s does not exist either. Dropping message\n", common.NameColor(msg.From))
 				continue
 			}
 
-			send_error(from.conn, fmt.Sprintf("'%s' is not connected\n", msg.to))
+			send_error(from.conn, fmt.Sprintf("'%s' is not connected\n", msg.To))
 			continue
 		}
 
-		header := []uint16{common.MESSAGE_CODE, uint16(len(msg.from)), uint16(len(msg.content))}
+		fmt.Println("this should never print")
+
+		header := []uint16{common.MESSAGE_CODE, uint16(len(msg.From)), uint16(len(msg.Content))}
 		err := binary.Write(to.conn, binary.BigEndian, header)
 
 		if err != nil {
@@ -175,7 +198,7 @@ func process_message_queue(connections map[string]Connection, mq <-chan Message)
 			continue
 		}
 
-		_, err = fmt.Fprintf(to.conn, "%s%s", msg.from, msg.content)
+		_, err = fmt.Fprintf(to.conn, "%s%s", msg.From, msg.Content)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -216,7 +239,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	connections := make(map[string]Connection)
 	message_queue := make(chan Message, 256)
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", listen_port))

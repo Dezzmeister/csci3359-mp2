@@ -3,13 +3,22 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"internal/common"
+	"log"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 )
+
+type Message struct {
+	To      string
+	From    string
+	Content string
+	Error   bool
+}
 
 func setup_connection(username string, ip string, port uint16) net.Conn {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
@@ -35,20 +44,26 @@ func setup_connection(username string, ip string, port uint16) net.Conn {
 }
 
 func send_message(conn net.Conn, to string, message string) {
-	header := []uint16{common.MESSAGE_CODE, uint16(len(to)), uint16(len(message))}
+	enc := gob.NewEncoder(conn)
+	err := enc.Encode(Message{to, "", message, false})
+	if err != nil {
+		// can Fsprintf what you want here.
+		log.Fatal(err)
+	}
+	/*header := []uint16{common.MESSAGE_CODE, uint16(len(to)), uint16(len(message))}
 	err := binary.Write(conn, binary.BigEndian, header)
 
 	if err != nil {
 		fmt.Println(err)
 		return
-	}
+	} */
 
-	_, err = fmt.Fprintf(conn, "%s%s", to, message)
+	/*_, err = fmt.Fprintf(conn, "%s%s", to, message)
 
 	if err != nil {
 		fmt.Println(err)
 		return
-	}
+	} */
 }
 
 func receive_error(conn net.Conn) {
@@ -73,7 +88,20 @@ func receive_error(conn net.Conn) {
 
 func receive_messages(conn net.Conn) {
 	for {
-		var msg_format uint16
+		dec := gob.NewDecoder(conn)
+		var msg Message
+		err := dec.Decode(&msg)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if msg.Error == true {
+			fmt.Println(msg.Content)
+			continue
+		}
+
+		/*var msg_format uint16
 		err := binary.Read(conn, binary.BigEndian, &msg_format)
 
 		if err != nil {
@@ -101,12 +129,13 @@ func receive_messages(conn net.Conn) {
 
 		if err != nil {
 			panic(err)
-		}
+		} *
 
 		from := string(raw_data[0:from_size])
-		message := string(raw_data[from_size:total_size])
+		message := string(raw_data[from_size:total_size]) */
 
-		fmt.Fprintf(common.ColorOutput, "%s: %s\n", common.NameColor(from), common.MessageColor((message)))
+		// fmt.Fprintf(common.ColorOutput, "%s: %s\n", common.NameColor(from), common.MessageColor((message)))
+		fmt.Fprintf(common.ColorOutput, "%s: %s\n", common.NameColor(msg.From), common.MessageColor((msg.Content)))
 	}
 }
 
@@ -172,9 +201,9 @@ func main() {
 	for scanner.Scan() {
 		raw_cmd := scanner.Text()
 
-		if (raw_cmd == "exit") {
-			os.Exit(0);
-		} else if (strings.HasPrefix(raw_cmd, "send")) {
+		if raw_cmd == "exit" {
+			os.Exit(0)
+		} else if strings.HasPrefix(raw_cmd, "send") {
 			handle_send_cmd(raw_cmd, conn)
 		} else {
 			fmt.Println("Unrecognized command. Type 'send <username> <message>' or 'exit'")
