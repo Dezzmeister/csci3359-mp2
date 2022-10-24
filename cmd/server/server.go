@@ -175,7 +175,6 @@ func process_message_queue(connections map[string]Connection, mq <-chan Message)
 			fmt.Fprintf(common.ColorOutput, "User %s does not exist\n", common.NameColor(msg.To))
 
 			from, ok := connections[msg.From]
-
 			// Obscure edge case in which a sender disconnects immediately after sending a message, but before the message
 			// is delivered. `connections` is shared among threads so another thread could delete a sender
 			// before this thread has a chance to process the message.dec
@@ -183,26 +182,28 @@ func process_message_queue(connections map[string]Connection, mq <-chan Message)
 				fmt.Fprintf(common.ColorOutput, "Sender %s does not exist either. Dropping message\n", common.NameColor(msg.From))
 				continue
 			}
-
 			send_error(from.conn, fmt.Sprintf("'%s' is not connected\n", msg.To))
 			continue
 		}
-
-		fmt.Println("this should never print")
-
-		header := []uint16{common.MESSAGE_CODE, uint16(len(msg.From)), uint16(len(msg.Content))}
-		err := binary.Write(to.conn, binary.BigEndian, header)
-
+		enc := gob.NewEncoder(to.conn)
+		err := enc.Encode(msg)
 		if err != nil {
-			fmt.Println(err)
-			continue
+			log.Fatal(err)
 		}
+		/*
+			header := []uint16{common.MESSAGE_CODE, uint16(len(msg.From)), uint16(len(msg.Content))}
+			err := binary.Write(to.conn, binary.BigEndian, header)
 
-		_, err = fmt.Fprintf(to.conn, "%s%s", msg.From, msg.Content)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			_, err = fmt.Fprintf(to.conn, "%s%s", msg.From, msg.Content)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			} */
 	}
 }
 

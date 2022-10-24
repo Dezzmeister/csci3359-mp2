@@ -96,8 +96,8 @@ func receive_messages(conn net.Conn) {
 			os.Exit(1)
 		}
 
-		if msg.Error == true {
-			fmt.Println(msg.Content)
+		if msg.Error {
+			fmt.Fprint(common.ColorOutput, common.ErrorColor(string(msg.Content)))
 			continue
 		}
 
