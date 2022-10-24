@@ -44,8 +44,6 @@ Once the client is connected, it spawns a new thread to handle incoming messages
 ![Client](assets/client.jpeg)
 
 ## Server Flow
-![Server](assets/server.jpeg)
-=======
 <img src="assets/server.jpeg" alt="server" width="1200"/>
 
 WIP
