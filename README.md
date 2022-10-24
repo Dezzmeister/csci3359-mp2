@@ -39,19 +39,14 @@ When a client connects to the server, it sends the length of the username (in by
 
 Once the client is connected, it spawns a new thread to handle incoming messages, and it listens for user input on the main thread. The user can send messages to other users by issuing the `send` command. When this happens, the client creates a message with the `to` field containing it's username and the  `content` field containing the message's content. The username and message have length limits, so if the header indicates that either is longer than its limit, the client is disconnected. Again, the client does not allow you to send messages to the server if these limits are exceeded, so anybody who manages to send such a message to the server must not be using the client. This normally wouldn't be a problem, but we don't want to leave the possibility of an attacker sending 0xFFFFFFFF or some large number as the header and forcing the server to allocate a lot of memory.
 
-## Design
-
 ### Client Flow
 
 ![Client](assets/client.jpeg)
 
-
-### Server Flow 
-
-<<<<<<< HEAD
+## Server Flow
 ![Server](assets/server.jpeg)
 =======
-<img src="server.jpeg" alt="server" width="1200"/>
+<img src="assets/server.jpeg" alt="server" width="1200"/>
 >>>>>>> refs/remotes/origin/gob
 
 WIP
