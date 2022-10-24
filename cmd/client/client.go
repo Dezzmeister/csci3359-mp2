@@ -13,6 +13,7 @@ import (
 	"strings"
 )
 
+// Message structure that represents messages sent between clients.
 type Message struct {
 	To      string
 	From    string
@@ -20,6 +21,12 @@ type Message struct {
 	Error   bool
 }
 
+/*
+* Establishes a connection with the server.
+* Sends the client's username and waits for the
+* server reply. Upon success, returns a TCP
+* connection that is used for sending messages.
+ */
 func setup_connection(username string, ip string, port uint16) net.Conn {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 
@@ -35,7 +42,6 @@ func setup_connection(username string, ip string, port uint16) net.Conn {
 	}
 
 	_, err = conn.Write([]byte(username))
-	// _, err = fmt.Fprintf(conn, username)
 	if err != nil {
 		conn.Close()
 		log.Fatal(err)
@@ -44,6 +50,8 @@ func setup_connection(username string, ip string, port uint16) net.Conn {
 	return conn
 }
 
+// Utility function that popualates a message with
+// to and content fields and sends it to the server.
 func send_message(conn net.Conn, to string, message string) {
 	enc := gob.NewEncoder(conn)
 	err := enc.Encode(Message{to, "", message, false})
@@ -52,6 +60,8 @@ func send_message(conn net.Conn, to string, message string) {
 	}
 }
 
+// Receives error messages from the server and
+// displays their content to the user.
 func receive_error(conn net.Conn) {
 	var error_length uint16
 	err := binary.Read(conn, binary.BigEndian, &error_length)
@@ -72,6 +82,13 @@ func receive_error(conn net.Conn) {
 	fmt.Fprint(common.ColorOutput, common.ErrorColor(string(raw_data)))
 }
 
+/*
+* Processes messages received from clients and servers.
+* In the case of an error message received from the server
+* prints the messages content. In the case of a message received from
+* a source client prints the sourceclient's username as well as the
+* message content.
+ */
 func receive_messages(conn net.Conn) {
 	for {
 		dec := gob.NewDecoder(conn)
@@ -90,6 +107,12 @@ func receive_messages(conn net.Conn) {
 	}
 }
 
+/*
+* Processes send commands from the user. Checks the length
+* of the destination client's username as well as
+* the message length to make sure they do not exceed maximum values.
+* If checks pass, starts a goroutine to send the message to the server.
+ */
 func handle_send_cmd(raw_cmd string, conn net.Conn) {
 	full_tokens := strings.Split(raw_cmd, " ")
 	args := full_tokens[1:]
@@ -121,6 +144,15 @@ func handle_send_cmd(raw_cmd string, conn net.Conn) {
 	go send_message(conn, to, message)
 }
 
+/*
+* Main thread, checks the source client's username
+* to make sure it does not exceed the maximum length.
+* If the username is valid, sets up a connection with
+* the server using the provided port number. Starts
+* a goroutine to receive messages as well as process
+* commands from the user. Client will exit when the
+'quit' command is issued by the user.
+*/
 func main() {
 	if len(os.Args) < 4 {
 		fmt.Println("Need to supply arguments: server ip, port, and username")

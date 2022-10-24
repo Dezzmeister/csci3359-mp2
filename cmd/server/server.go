@@ -12,6 +12,7 @@ import (
 	"strconv"
 )
 
+// Message structure that represents messages sent between clients.
 type Message struct {
 	To      string
 	From    string
@@ -19,6 +20,7 @@ type Message struct {
 	Error   bool
 }
 
+// Connection structure that represents a 1 to 1 connection between server and client.
 type Connection struct {
 	username string
 	conn     net.Conn
@@ -67,6 +69,12 @@ func receive_connection(ln net.Listener) (Connection, error) {
 	return Connection{username, conn}, nil
 }
 
+/*
+* A function that runs continously, decodes
+* messages received from source clients and validates
+* the username and message content. Upon successful
+* validation, puts the message in the server's message queue.
+ */
 func receive_messages(connections map[string]Connection, conn Connection, mq chan<- Message) {
 	for {
 
@@ -109,6 +117,8 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 
 }
 
+// A utility function that sends an error message
+// from server to client.
 func send_error(conn net.Conn, error_msg string) {
 	msg := Message{"", "", error_msg, true}
 	enc := gob.NewEncoder(conn)
@@ -118,6 +128,14 @@ func send_error(conn net.Conn, error_msg string) {
 	}
 }
 
+/*
+* A function that continually processes the message queue.
+* Pulls messages from the queue and checks their source and destination
+* fields. If both source and destination clients have disconnected the
+function drops the message. If the destination client is not connected
+the function sends an error message to the source client and drops the message.
+If all checks pass, the function sends the message to the destination client.
+*/
 func process_message_queue(connections map[string]Connection, mq <-chan Message) {
 	for {
 		msg, ok := <-mq
@@ -150,6 +168,13 @@ func process_message_queue(connections map[string]Connection, mq <-chan Message)
 	}
 }
 
+/*
+* A function that listens for incoming connections on the server.
+* The function checks the username of the source client initiating
+* the connection to make sure its available. If available,
+* the server saves the client's connection and starts
+a new goroutine to process the source client's messages.
+*/
 func listen_for_connections(ln net.Listener, connections map[string]Connection, mq chan<- Message) {
 	for {
 		conn, err := receive_connection(ln)
@@ -172,6 +197,13 @@ func listen_for_connections(ln net.Listener, connections map[string]Connection, 
 	}
 }
 
+/*
+* Main thread, initializes the message queue
+* as well as the map from client usernames to messages.
+* The function starts two goroutines one to listen
+* for connections and another to process the message queue
+* the function then waits for an 'exit' command from the user
+ */
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Need to supply listening port for incoming connections")
