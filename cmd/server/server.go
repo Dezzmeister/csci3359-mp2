@@ -78,24 +78,6 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 		to_size := uint16(len(msg.To))
 		msg_size := uint16(len(msg.Content))
 
-		/*var opcode uint16
-
-		err := binary.Read(conn.conn, binary.BigEndian, &opcode)
-
-		if err != nil {
-			break
-		}
-
-		header := make([]uint16, 2)
-		err = binary.Read(conn.conn, binary.BigEndian, header)
-
-		if err != nil {
-			break
-		} */
-
-		/*to_size, msg_size := header[0], header[1]
-		total_size := to_size + msg_size */
-
 		if to_size > uint16(common.MAX_USERNAME_LENGTH) {
 			fmt.Fprintf(
 				common.ColorOutput,
@@ -115,20 +97,8 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 				common.MAX_MESSAGE_LENGTH)
 			break
 		}
-
-		/*raw_data := make([]byte, total_size)
-		_, err = conn.conn.Read(raw_data)
-		if err != nil {
-			break
-		}
-
-		to_username := string(raw_data[0:to_size])
-		message := string(raw_data[to_size:total_size]) */
-
 		msg.From = conn.username
 		mq <- msg
-		// mq <- Message{to_username, conn.username, message}
-		//fmt.Fprintf(common.ColorOutput, "%s to %s: %s\n", common.NameColor(conn.username), common.NameColor(to_username), common.MessageColor(message))
 		fmt.Fprintf(common.ColorOutput, "%s to %s: %s\n", common.NameColor(conn.username), common.NameColor(msg.To), common.MessageColor(msg.Content))
 	}
 
@@ -145,20 +115,6 @@ func send_error(conn net.Conn, error_msg string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	/*header := []uint16{common.ERROR_CODE, uint16(len(error_msg))}
-	err := binary.Write(conn, binary.BigEndian, header)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	_, err = fmt.Fprintf(conn, error_msg)
-
-	if err != nil {
-		fmt.Println(err)
-	} */
 }
 
 func process_message_queue(connections map[string]Connection, mq <-chan Message) {
@@ -190,20 +146,6 @@ func process_message_queue(connections map[string]Connection, mq <-chan Message)
 		if err != nil {
 			log.Fatal(err)
 		}
-		/*
-			header := []uint16{common.MESSAGE_CODE, uint16(len(msg.From)), uint16(len(msg.Content))}
-			err := binary.Write(to.conn, binary.BigEndian, header)
-
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			_, err = fmt.Fprintf(to.conn, "%s%s", msg.From, msg.Content)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			} */
 	}
 }
 
