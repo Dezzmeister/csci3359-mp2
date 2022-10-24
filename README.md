@@ -48,6 +48,6 @@ Once the client is connected, it spawns a new thread to handle incoming messages
 
 ### Server Flow 
 
-![Server](server.jpeg)
+<img src="server.jpeg" alt="server" width="1200"/>
 
 WIP
