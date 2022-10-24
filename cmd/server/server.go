@@ -73,7 +73,7 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 		var msg Message
 		err := dec.Decode(&msg)
 		if err != nil {
-			log.Fatal(err)
+			break
 		}
 		to_size := uint16(len(msg.To))
 		msg_size := uint16(len(msg.Content))
