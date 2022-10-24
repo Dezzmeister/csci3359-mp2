@@ -24,21 +24,21 @@ func setup_connection(username string, ip string, port uint16) net.Conn {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Send size of username first
 	err = binary.Write(conn, binary.BigEndian, uint8(len(username)))
 	if err != nil {
 		conn.Close()
-		panic(err)
+		log.Fatal(err)
 	}
 
 	_, err = conn.Write([]byte(username))
 	// _, err = fmt.Fprintf(conn, username)
 	if err != nil {
 		conn.Close()
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return conn
@@ -132,6 +132,7 @@ func main() {
 	server_port, err := strconv.Atoi(os.Args[2])
 
 	if err != nil {
+		log.Fatal(err)
 		panic(err)
 	}
 

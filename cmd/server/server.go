@@ -69,6 +69,7 @@ func receive_connection(ln net.Listener) (Connection, error) {
 
 func receive_messages(connections map[string]Connection, conn Connection, mq chan<- Message) {
 	for {
+
 		dec := gob.NewDecoder(conn.conn)
 		var msg Message
 		err := dec.Decode(&msg)
@@ -81,7 +82,7 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 		if to_size > uint16(common.MAX_USERNAME_LENGTH) {
 			fmt.Fprintf(
 				common.ColorOutput,
-				"User %s tried to send a message to a username of length %d. Max is %d\n",
+				"User %s tried to send a message to a username of length %d. Maximum length is %d.\n",
 				common.NameColor(conn.username),
 				to_size,
 				common.MAX_USERNAME_LENGTH)
@@ -91,7 +92,7 @@ func receive_messages(connections map[string]Connection, conn Connection, mq cha
 		if msg_size > uint16(common.MAX_MESSAGE_LENGTH) {
 			fmt.Fprintf(
 				common.ColorOutput,
-				"User %s tried to send a message of length %d. Max is %d\n",
+				"User %s tried to send a message of length %d. Maximum length is %d.\n",
 				common.NameColor(conn.username),
 				msg_size,
 				common.MAX_MESSAGE_LENGTH)
