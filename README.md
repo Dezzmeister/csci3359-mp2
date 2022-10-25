@@ -1,8 +1,15 @@
 <h1 style="text-align: center; font-size: 3rem;">Machine Problem 2: Private Message Chat Room Application</h1>
 
-This is a simple multi-user chat application. Someone runs the central server, and clients connect to the server with a username. Clients can send direct messages to other clients who are connected - but every message is seen by the server. The server routes messages to their intended recipients.
+This is a simple multi-user chat application. A machine runs the central server, and multiple clients connect to the server with a username. Clients can send direct messages to other clients who are connected; however, every message is first seen by the server. The server then routes messages to their intended recipients.
 
-##  How to run. 
+This program documentation consists of the following sections:
+
+- How to Run
+- Architecture
+  - Client Flow
+  - Server Flow
+
+##  How to Run 
 
 Run the server with
 
@@ -20,7 +27,9 @@ Run the client with
 go run cmd/client/client.go <ip> <port> <username>
 ```
 
-The client needs to know the IP and port of the chat server as well as the username to connect with. You can send a message to another user with `send <username> <message>` and you can quit by typing `exit`.
+The client needs to know the IP and port of the chat server as well as the username to connect with. 
+
+Send messages between users (clients) with `send <username> <message>`. Quit by typing `exit`.
 
 ##  Architecture
 
@@ -45,5 +54,3 @@ Once the client is connected, it spawns a new thread to handle incoming messages
 
 ## Server Flow
 <img src="assets/server.jpeg" alt="server" width="1200"/>
-
-WIP
