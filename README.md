@@ -1,4 +1,4 @@
-<h1 style="text-align: center; font-size: 3rem;">CSCI3359 Distributed Systems MP2</h1>
+<h1 style="text-align: center; font-size: 3rem;">Machine Problem 2: Private Message Chat Room Application</h1>
 
 This is a simple multi-user chat application. Someone runs the central server, and clients connect to the server with a username. Clients can send direct messages to other clients who are connected - but every message is seen by the server. The server routes messages to their intended recipients.
 
