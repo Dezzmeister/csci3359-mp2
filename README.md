@@ -4,10 +4,10 @@ This is a simple multi-user chat application. A machine runs the central server,
 
 This program documentation consists of the following sections:
 
-- How to Run
-- Architecture
-  - Client Flow
-  - Server Flow
+1. How to Run
+2. Architecture
+  a) Client Flow
+  b) Server Flow
 
 ##  How to Run 
 
